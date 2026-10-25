@@ -2346,18 +2346,64 @@ function renderDsched(){
   document.getElementById('dsSel').onchange=draw; draw();
 }
 
-/* ---------- More tiles, V5 (V4's list + 3 new views) ---------- */
+/* ---------- More tiles, V5 (order the user set: new features second-last,
+   Make it yours / Settings / How this works last) ---------- */
+/* The 16 new features used to live in a separate bordered card, which looked
+   different from the rest of the More view. Now they are plain tiles exactly
+   like the others (same .trow markup, inside #tiles), so the whole list
+   looks alike. Shared / 50-30-20 / Debt schedule are NOT duplicated: they
+   appear only inside the new-features group. */
 var BUILT5=Object.assign({},BUILT4,{'Shared budget':'shared','50 / 30 / 20':'v5030','Debt schedule':'dsched'});
 function renderTilesV5(){
-  var all=TILES.concat([['🔁','Weekly reset','Guided 5-minute money date'],['📖','How this works','The whole planner, in plain words'],['🤝','Shared budget','One file, two people'],['⚖️','50 / 30 / 20','Needs, wants, savings'],['📜','Debt schedule','Every payment, mapped out']]);
-  document.getElementById('tiles').innerHTML=all.map(function(t){
-    var v=BUILT5[t[1]]||(t[1]==='Weekly reset'?'reset':'');
+  var tiles=document.getElementById('tiles');
+  if(!tiles)return;
+  var base=TILES.concat([['🔁','Weekly reset','Guided 5-minute money date']]);
+  var news=[
+    ['🎤','Voice logging','Say a spend','spend',''],
+    ['🤝','Shared budget','One file, two people','shared',''],
+    ['🔍','Auto subscription detection','Repeats become bills','subs',''],
+    ['⚡','Autopay auto-mark','Bills mark paid by themselves','bills',''],
+    ['⏰','Trial-ending reminders','','subs',''],
+    ['📜','Debt schedule','Every payment, mapped out','dsched',''],
+    ['📈','Net worth projection','Next 12 months','networth',''],
+    ['🏷️','Auto-categorisation','Learns from your notes','import',''],
+    ['🪙','Auto-saving','Round-ups + payday move','settings','v4RoundUp'],
+    ['💾','Backup reminders','When 30 days pass','today',''],
+    ['♿','Accessibility','Easy-read font, reduced motion','settings','v4EasyFont'],
+    ['🌐','Languages','Main labels in English + Spanish','settings','v4Lang'],
+    ['⏱️','Hours-of-work pricing','What a buy costs in hours','today',''],
+    ['🛟','% cushion weekly number','Hold some back','settings','v4Cushion'],
+    ['🎉','3-paycheck months','Flagged in the Year planner','year',''],
+    ['⚖️','50 / 30 / 20','Needs, wants, savings','v5030','']
+  ];
+  var last=[
+    ['🎨','Make it yours','Your colours & text size','makeit',''],
+    ['⚙️','Settings','Everything in one place','settings',''],
+    ['📖','How this works','The whole planner, in plain words','how','']
+  ];
+  var tileHtml=function(t){
     return '<button class="trow" data-tile="'+esc(t[1])+'"><span class="gi">'+t[0]+'</span><span class="grow"><span class="t">'+t[1]+'</span><span class="d">'+t[2]+'</span></span><span class="chev">›</span></button>';
-  }).join('');
+  };
+  var newHtml=function(t){
+    return '<button class="trow" data-goto="'+t[3]+'"'+(t[4]?' data-anchor="'+t[4]+'"':'')+'><span class="gi">'+t[0]+'</span><span class="grow"><span class="t">'+t[1]+'</span><span class="d">'+t[2]+'</span></span><span class="chev">›</span></button>';
+  };
+  tiles.innerHTML=base.map(tileHtml).join('')
+    +'<div class="small" style="font-weight:700;font-size:15px;padding:2px 4px">✨ All-in-One</div>'
+    +news.map(newHtml).join('')
+    +last.map(newHtml).join('');
   $$('#tiles [data-tile]').forEach(function(el){
     el.onclick=function(){
       var v=BUILT5[el.dataset.tile]||(el.dataset.tile==='Weekly reset'?'reset':'');
       if(v)show(v);
+    };
+  });
+  $$('#tiles [data-goto]').forEach(function(b){
+    b.onclick=function(){
+      var v=b.dataset.goto;
+      if(v==='spend')openSpend();
+      else if(v==='makeit')v4GoSettings('makeit');
+      else if(b.dataset.anchor)v4GoSettings(b.dataset.anchor);
+      else if(v)show(v);
     };
   });
 }
@@ -2628,44 +2674,9 @@ function v4GoSettings(anchor){
   };
 })();
 
-/* ---------- More view: the full list of what is new, tap to jump ---------- */
-(function(){
-  var tiles=document.getElementById('tiles');
-  if(!tiles||document.getElementById('v4NewCard'))return;
-  var rows=[
-    ['🎤','Voice logging — say a spend','spend'],
-    ['🤝','Shared budget — one file, two people','shared'],
-    ['🔍','Auto subscription detection — repeats become bills','subs'],
-    ['⚡','Autopay auto-mark — bills mark paid by themselves','bills'],
-    ['⏰','Trial-ending reminders','subs'],
-    ['📜','Debt schedule — every payment mapped out','dsched'],
-    ['📈','Net worth projection — next 12 months','networth'],
-    ['🏷️','Auto-categorisation — learns from your notes','import'],
-    ['🪙','Auto-saving — round-ups + payday move','settings','v4RoundUp'],
-    ['💾','Backup reminders — when 30 days pass','today'],
-    ['♿','Accessibility — easy-read font, reduced motion','settings','v4EasyFont'],
-    ['🌐','Languages — main labels in English + Spanish','settings','v4Lang'],
-    ['⏱️','Hours-of-work pricing — what a buy costs in hours','today'],
-    ['🛟','% cushion weekly number — hold some back','settings','v4Cushion'],
-    ['🎉','3-paycheck months — flagged in the Year planner','year'],
-    ['⚖️','50 / 30 / 20 — needs, wants, savings','v5030']
-  ];
-  var card=document.createElement('div');
-  card.className='card'; card.id='v4NewCard';
-  card.innerHTML='<h3>✨ All-in-One</h3><p class="sub">14 new + 2 brought back. Tap one to jump to it.</p>'
-    +rows.map(function(r){
-      return '<button class="trow" data-goto="'+r[2]+'"'+(r[3]?' data-anchor="'+r[3]+'"':'')+'><span class="gi">'+r[0]+'</span><span class="grow"><span class="t">'+r[1]+'</span></span><span class="chev">›</span></button>';
-    }).join('');
-  tiles.parentNode.insertBefore(card,tiles);
-  $$('#v4NewCard [data-goto]').forEach(function(b){
-    b.onclick=function(){
-      var v=b.dataset.goto;
-      if(v==='spend')openSpend();
-      else if(b.dataset.anchor)v4GoSettings(b.dataset.anchor);
-      else show(v);
-    };
-  });
-})();
+/* NOTE: the old separate All-in-One card is gone — the 16 new features are
+   now plain tiles inside #tiles (see renderTilesV5 above), so the whole
+   More view looks alike. */
 
 /* ---------- Sidebar: EVERYTHING in one list, as asked ---------- */
 /* An "All-in-One" group SECOND-LAST in the sidebar (user's call: The
